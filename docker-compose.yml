@@ -3,7 +3,9 @@ x-iris: &iris
   build:
     context: ./docker/iris
   command: ["--password-file", "/run/secrets/iris_password", "--after", "/opt/multi-manager/start-demo.sh"]
-  secrets: [iris_password]
+  configs:
+    - source: iris_password
+      target: /run/secrets/iris_password
   environment:
     ISC_DATA_DIRECTORY: /durable/iris
   healthcheck:
@@ -53,6 +55,6 @@ volumes:
   iris_prod1_data:
   iris_prod2_data:
   iris_prod3_data:
-secrets:
+configs:
   iris_password:
-    file: ./.runtime/iris-password
+    content: "IrisDemo2026!"

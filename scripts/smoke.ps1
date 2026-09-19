@@ -7,7 +7,9 @@ function Get-Api([string]$path) { Invoke-RestMethod "$BaseUrl/api$path" -WebSess
 function Post-Api([string]$path,$body) { Invoke-RestMethod "$BaseUrl/api$path" -Method Post -ContentType application/json -Headers $headers -Body ($body|ConvertTo-Json -Depth 12 -Compress) -WebSession $session -TimeoutSec 45 }
 Assert-True ((Invoke-WebRequest $BaseUrl -TimeoutSec 10).StatusCode -eq 200) 'Frontend unavailable'
 Assert-True ((Get-Api '/health').status -eq 'UP') 'Backend unavailable'
-$password=[IO.File]::ReadAllText((Join-Path $PSScriptRoot '../.runtime/iris-password'))
+$compose=(& docker compose -f (Join-Path $PSScriptRoot '../docker-compose.yml') config --format json | ConvertFrom-Json)
+$password=$compose.configs.iris_password.content
+Assert-True (-not [string]::IsNullOrWhiteSpace($password)) 'Demo password missing from Compose config'
 try {
     $instances=Get-Api '/instances'
     Assert-True ($instances.Count -eq 3) 'Expected three demo targets'
