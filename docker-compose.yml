@@ -1,12 +1,58 @@
-version: '3.6'
+name: iris-multi-manager
+x-iris: &iris
+  build:
+    context: ./docker/iris
+  command: ["--password-file", "/run/secrets/iris_password", "--after", "/opt/multi-manager/start-demo.sh"]
+  secrets: [iris_password]
+  environment:
+    ISC_DATA_DIRECTORY: /durable/iris
+  healthcheck:
+    test: ["CMD", "iris", "qlist", "IRIS"]
+    interval: 15s
+    timeout: 5s
+    retries: 20
+    start_period: 60s
+  networks: [iris-multi-manager-net]
 services:
-  iris:
-    build:
-      context: .
-    command: --check-caps false
-    ports:
-      - 52773:52773
-    volumes:
-      - ./web:/opt/coffee/csp
-      - ./tests:/opt/coffee/tests
-      - ./:/irisdev/app
+  frontend:
+    build: ./frontend
+    ports: ["127.0.0.1:8080:80"]
+    networks: [iris-multi-manager-net]
+    depends_on: [backend]
+  backend:
+    build: ./backend
+    ports: ["127.0.0.1:8081:8080"]
+    networks: [iris-multi-manager-net]
+  iris-prod1:
+    <<: *iris
+    hostname: iris-prod1
+    environment:
+      ISC_DATA_DIRECTORY: /durable/iris
+      DEMO_PROFILE: PROD1
+    ports: ["127.0.0.1:52773:52773", "127.0.0.1:1972:1972"]
+    volumes: [iris_prod1_data:/durable]
+  iris-prod2:
+    <<: *iris
+    hostname: iris-prod2
+    environment:
+      ISC_DATA_DIRECTORY: /durable/iris
+      DEMO_PROFILE: PROD2
+    ports: ["127.0.0.1:52774:52773", "127.0.0.1:1973:1972"]
+    volumes: [iris_prod2_data:/durable]
+  iris-prod3:
+    <<: *iris
+    hostname: iris-prod3
+    environment:
+      ISC_DATA_DIRECTORY: /durable/iris
+      DEMO_PROFILE: PROD3
+    ports: ["127.0.0.1:52775:52773", "127.0.0.1:1974:1972"]
+    volumes: [iris_prod3_data:/durable]
+networks:
+  iris-multi-manager-net:
+volumes:
+  iris_prod1_data:
+  iris_prod2_data:
+  iris_prod3_data:
+secrets:
+  iris_password:
+    file: ./.runtime/iris-password

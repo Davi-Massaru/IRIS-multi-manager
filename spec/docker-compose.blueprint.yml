@@ -1,0 +1,77 @@
+# BLUEPRINT DE TOPOLOGIA — NÃO É A IMPLEMENTAÇÃO FINAL.
+# O agente deverá converter este desenho em compose executável e validar com `docker compose config`.
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+    networks:
+      - iris-multi-manager-net
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8081:8080" # opcional no release; útil no demo/debug
+    networks:
+      - iris-multi-manager-net
+    environment:
+      IRIS_PROD1_ADMIN_URL: http://iris-prod1:52773/api/admin
+      IRIS_PROD2_ADMIN_URL: http://iris-prod2:52773/api/admin
+      IRIS_PROD3_ADMIN_URL: http://iris-prod3:52773/api/admin
+      IRIS_PROD1_JDBC_URL: jdbc:IRIS://iris-prod1:1972/USER
+      IRIS_PROD2_JDBC_URL: jdbc:IRIS://iris-prod2:1972/USER
+      IRIS_PROD3_JDBC_URL: jdbc:IRIS://iris-prod3:1972/USER
+    # Não bloquear startup do backend na saúde dos IRIS.
+    # IRIS offline é um cenário funcional que o FleetExecutor deve representar.
+
+  iris-prod1:
+    build:
+      context: ./docker/iris
+      args:
+        DEMO_PROFILE: PROD1
+    ports:
+      - "52773:52773"
+      - "1972:1972"
+    volumes:
+      - iris_prod1_data:/durable
+    networks:
+      - iris-multi-manager-net
+
+  iris-prod2:
+    build:
+      context: ./docker/iris
+      args:
+        DEMO_PROFILE: PROD2
+    ports:
+      - "52774:52773"
+      - "1973:1972"
+    volumes:
+      - iris_prod2_data:/durable
+    networks:
+      - iris-multi-manager-net
+
+  iris-prod3:
+    build:
+      context: ./docker/iris
+      args:
+        DEMO_PROFILE: PROD3
+    ports:
+      - "52775:52773"
+      - "1974:1972"
+    volumes:
+      - iris_prod3_data:/durable
+    networks:
+      - iris-multi-manager-net
+
+networks:
+  iris-multi-manager-net:
+
+volumes:
+  iris_prod1_data:
+  iris_prod2_data:
+  iris_prod3_data:
