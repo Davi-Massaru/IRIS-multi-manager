@@ -18,6 +18,9 @@ try {
     $partial=Get-Api '/processes?instances=prod1,prod2,prod3&filter=DemoWorker'
     Assert-True ($partial.successCount -eq 2) 'Offline target collapsed fleet results'
     Assert-True (($partial.results|Where-Object instanceId -eq prod2).status -in @('OFFLINE','TIMEOUT')) 'Offline target not identified'
+    $monitorPartial=Get-Api '/monitor/overview?instances=prod1,prod2,prod3'
+    Assert-True ($monitorPartial.successCount -eq 2) 'Offline target collapsed overview results'
+    Assert-True (($monitorPartial.results|Where-Object instanceId -eq prod2).status -in @('OFFLINE','TIMEOUT')) 'Offline overview target not identified'
 } finally {
     docker compose start iris-prod2 | Out-Null
 }

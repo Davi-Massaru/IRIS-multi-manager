@@ -1,0 +1,12 @@
+. "$PSScriptRoot/smoke.ps1"
+$overview=Get-Api '/monitor/overview?instances=prod1,prod2,prod3'
+Assert-True ($overview.successCount -eq 3) 'Overview failed'
+Assert-True ($overview.results[0].data.globalRefsPerSecond -ne $null) 'Missing documented performance rate'
+$licenses=Get-Api '/monitor/licenses?instances=prod1,prod2,prod3'
+Assert-True ($licenses.successCount -eq 3) 'License details failed'
+$usage=Get-Api '/monitor/usage?instances=prod1,prod2,prod3'
+Assert-True ($usage.successCount -eq 3) 'System usage failed'
+Assert-True ($usage.results[0].data.sharedMemory.Count -gt 0) 'Shared memory missing'
+$history=Get-Api '/monitor/history?instances=prod1,prod2,prod3'
+Assert-True ($history.successCount -eq 3) 'Metric history failed'
+Write-Host 'PASS: overview, licenses, system usage, shared memory and live history across three instances.'

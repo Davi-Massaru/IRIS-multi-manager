@@ -31,6 +31,7 @@ public class ProcessResource {
         row.put("instanceId",i.id()).put("instanceName",i.name());
         row.set("pid",p.path("Pid")); row.set("namespace",p.path("Nspace")); row.set("routine",p.path("Routine"));
         row.set("user",p.path("Username")); row.set("state",p.path("State")); row.set("cpuTime",p.path("CPUTime"));row.set("clientIPAddress",p.path("IPAddress"));
+        row.set("elapsedTime",p.path("ElapsedTime"));row.set("commands",p.path("Commands"));row.set("globalReferences",p.path("Globals"));
         row.set("canSuspend",p.path("CanBeSuspended"));row.set("canTerminate",p.path("CanBeTerminated"));
         return row;
     }

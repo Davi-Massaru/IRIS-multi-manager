@@ -90,6 +90,7 @@ After all services are healthy, the PowerShell smoke scripts exercise the live d
 ./scripts/smoke-secrets.ps1
 ./scripts/smoke-system-events.ps1
 ./scripts/smoke-query.ps1
+./scripts/smoke-monitor.ps1
 ```
 
 The backend unit suite runs during its Docker build. To stop the application while retaining demo data, run `docker compose down`. The three named volumes remain until explicitly removed.
@@ -104,3 +105,24 @@ Browser → Angular / Nginx → Quarkus → SysAdmin API → IRIS PROD-01
 ```
 
 This project is a multi-instance administration client. It does not install an application agent on the managed servers; the bundled IRIS containers contain only small demo fixtures. The backend uses Basic authentication to the SysAdmin API, keeps credentials in its server-side session, and does not return passwords or secret values to the browser. The demo publishes ports only on localhost. Review authentication, transport security, and access policy before connecting to non-demo systems.
+
+## Metrics sources
+
+The monitoring UI uses fields defined by the official SysAdmin OpenAPI contract. Missing values remain unavailable; the application does not replace them with generated metrics.
+
+| UI metric | SysAdmin API | OpenAPI field | Semantics in the UI |
+| --- | --- | --- | --- |
+| Processes | `GET /v2/monitor/dashboard/main` | `SystemUsage.Processes` | Most recently measured running process count |
+| Web sessions | `GET /v2/monitor/dashboard/main` | `SystemUsage.CSPSessions` | Most recently measured CSP session count |
+| Global references / second | `GET /v2/monitor/dashboard/main` | `Performance.GlobalRefsPerSecond` | Most recently measured rate |
+| Cache efficiency | `GET /v2/monitor/dashboard/main` | `Performance.CacheEfficiency` | Most recently measured global references divided by physical reads and writes |
+| Global references and disk operations | `GET /v2/monitor/dashboard/main` | `Performance.GlobalRefs`, `DiskReads`, `DiskWrites` | Cumulative counters since system startup |
+| Instance status | `GET /v2/monitor/dashboard/main` | `Status.SystemMonitor` and official `SystemUsage` status fields | Multi-Manager reports warning when System Monitor is stopped or a returned status is not `Normal` |
+| License usage | `GET /v2/monitor/dashboard/main` | `Licensing.LicenseLimit`, `LicenseUse`, `LicenseUseHigh` | Current and high-water percentage; unavailable when IRIS returns an empty value |
+| License details | `GET /v2/monitor/license-usage` | `UsageByUser`, `UsageByProcess` | Current connections, CSP connections, license units, active time, and grace time |
+| Process CPU | `GET /v2/processes` | `CPUTime` | Cumulative system plus user CPU time in milliseconds, never presented as CPU percent |
+| Process elapsed time | `GET /v2/processes` | `ElapsedTime` | Elapsed lifetime reported by IRIS |
+| System usage | `GET /v2/monitor/system-usage` | `AllGlobalReferences`, `GlobalUpdateReferences`, `RoutineCalls`, block and journal fields | Cumulative counters, explicitly labeled “since startup” |
+| Shared memory | `GET /v2/monitor/system-usage/shared-memory` | `SMHAllocated`, `SMHUsed`, `SMHAvailable`, `AllUsed` | Absolute values; used percentage is calculated only when allocated is positive |
+
+The Overview requests a current snapshot every 15 seconds while it is open. The backend retains at most 60 in-memory samples per instance for the current application run. These trends are collected by Multi-Manager and are not historical data supplied by IRIS. Restarting the backend clears them.
