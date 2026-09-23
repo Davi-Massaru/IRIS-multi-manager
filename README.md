@@ -15,6 +15,8 @@ The application connects to the [SysAdmin API](https://github.com/intersystems-c
 - Preview and apply supported web application and task changes to selected servers, then inspect the result for each server.
 - View system information and audit events per instance.
 - Run one bounded, read-only SELECT query on selected instances and view rows grouped by server.
+- Discover and compare `VECTOR` and `EMBEDDING` columns, dimensions, row counts, embedding configurations, storage location, recipes, and HNSW indexes.
+- Preview source rows with vectors hidden by default, test the controlled Embedded Python recipe, regenerate a selected demo row, and create, rebuild, or drop HNSW indexes after typed confirmation.
 
 A failed or offline server does not hide successful results from the others. Operations across servers are not distributed transactions.
 
@@ -49,6 +51,19 @@ The three demo IRIS servers have separate persistent volumes. Their local JDBC p
 3. Open **Web Apps** or **Tasks** to compare presence and configuration. The demo deliberately includes resources that exist on only some servers. Review a preview before applying a supported change.
 4. Open **Permissions**, **System**, and **Events** to inspect each server's security metadata, system data, and audit records.
 5. Open **Fleet Query** and run a SELECT query. The results remain grouped by IRIS instance.
+6. Open **Vector Search** and refresh the inventory. PROD-01 and PROD-02 include an `EMBEDDING` table and HNSW index; PROD-03 includes a custom `VECTOR(DOUBLE,4)` recipe without HNSW. Use **Rows** for source data, **Vector preview** for an explicit vector reveal, or **Regenerate row 1** to exercise `SqlProc + Embedded Python`.
+
+## Vector Management workspace
+
+The vector workspace follows the same partial-failure model as the rest of Multi-Manager. Every result remains attached to `(instance, namespace)`, so an offline target does not remove successful inventory from other servers.
+
+Discovery uses JDBC and the IRIS class dictionary because the SysAdmin API does not expose vector SQL metadata. `%Dictionary.CompiledProperty` identifies `%Library.Vector` and `%Library.Embedding`; `%Dictionary.CompiledIndex` provides HNSW parameters. `%Embedding.Config` is read separately, and secret-like keys such as `apiKey`, `token`, `password`, and `secret` are recursively replaced with `[REDACTED]` before the response is sent to Angular.
+
+The bundled extension [`MultiManager.Vector.Extension`](docker/iris/src/MultiManager/Vector/Extension.cls) runs inside IRIS and exposes controlled SQL procedures for capabilities, model checks, model-download policy, test generation, and regeneration. The demo image intentionally does not download external models. It reports the real `sentence_transformers` installation state and uses [`MultiManager.Vector.DemoEmbedding`](docker/iris/src/MultiManager/Vector/DemoEmbedding.cls), a deterministic four-dimension Embedded Python provider, so the complete `EMBEDDING` path works offline. A real deployment can register its own `%Embedding.Interface` class and model cache.
+
+HNSW and regeneration changes use a two-step flow. The backend first resolves the selected asset from discovered metadata and returns the exact SQL or update description, instance, target, confirmation phrase, and a session-bound token valid for two minutes. Apply consumes that token once. Browser input never becomes an unrestricted SQL identifier.
+
+Location resolution combines the namespace's `Globals` and `Routines` defaults from the SysAdmin API, global and package mappings, and `DataLocation`/`IndexLocation` from `%Dictionary.CompiledStorage`. The longest matching mapping wins. If the resolver cannot prove a physical data, index, or code database, it displays `UNKNOWN`; it does not guess.
 
 ## Add another IRIS connection
 
@@ -91,6 +106,7 @@ After all services are healthy, the PowerShell smoke scripts exercise the live d
 ./scripts/smoke-system-events.ps1
 ./scripts/smoke-query.ps1
 ./scripts/smoke-monitor.ps1
+./scripts/smoke-vector.ps1
 ```
 
 The backend unit suite runs during its Docker build. To stop the application while retaining demo data, run `docker compose down`. The three named volumes remain until explicitly removed.
@@ -102,6 +118,8 @@ Browser → Angular / Nginx → Quarkus → SysAdmin API → IRIS PROD-01
                                       ├───────────→ IRIS PROD-02
                                       └───────────→ IRIS PROD-03
                               JDBC → selected IRIS instances (Fleet Query)
+                                   → vector metadata, rows and HNSW DDL
+                              JDBC → SqlProc → Embedded Python inside IRIS
 ```
 
 This project is a multi-instance administration client. It does not install an application agent on the managed servers; the bundled IRIS containers contain only small demo fixtures. The backend uses Basic authentication to the SysAdmin API, keeps credentials in its server-side session, and does not return passwords or secret values to the browser. The demo publishes ports only on localhost. Review authentication, transport security, and access policy before connecting to non-demo systems.

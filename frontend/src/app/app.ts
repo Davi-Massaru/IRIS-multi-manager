@@ -12,8 +12,9 @@ import {EventsWorkspace} from './features/events';
 import {OverviewWorkspace} from './features/overview';
 import {LicensesWorkspace} from './features/licenses';
 import {MetricBarChart} from './shared/metric-bar-chart';
+import {VectorWorkspace} from './features/vector';
 
-@Component({selector:'app-root',imports:[FormsModule,JsonPipe,InstanceSelector,FleetOperationResult,ResourceWorkspace,SecurityWorkspace,FleetQuery,SystemWorkspace,EventsWorkspace,OverviewWorkspace,LicensesWorkspace,MetricBarChart],templateUrl:'./app.html'})
+@Component({selector:'app-root',imports:[FormsModule,JsonPipe,InstanceSelector,FleetOperationResult,ResourceWorkspace,SecurityWorkspace,FleetQuery,SystemWorkspace,EventsWorkspace,OverviewWorkspace,LicensesWorkspace,MetricBarChart,VectorWorkspace],templateUrl:'./app.html'})
 export class App {
   instances=signal<Instance[]>([]);selected=signal<string[]>([]);view=signal('Instances');busy=signal(false);error=signal('');
   statuses=signal<FleetResult|null>(null);processes=signal<FleetResult<ProcessRow[]>|null>(null);detail=signal<FleetResult|null>(null);

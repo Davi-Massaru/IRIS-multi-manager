@@ -1,10 +1,9 @@
 Class MultiManager.Demo.DemoWorker
 {
-ClassMethod Run()
+ClassMethod Run() [ Language = python ]
 {
-    Lock +^MultiManagerDemo("worker"):0
-    Quit:'$TEST
-    Set ^MultiManagerDemo("workerPid")=$JOB
-    For { Hang 5 }
+    import iris
+
+    iris.execute("job Run^MultiManagerDemoWorker")
 }
 }

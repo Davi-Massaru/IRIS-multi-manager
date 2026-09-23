@@ -1,0 +1,8 @@
+ROUTINE MultiManagerDemoWorker
+
+Run
+    Set ^MultiManagerDemo("workerPid")=$Job
+    For {
+        Hang 5
+    }
+    Quit
