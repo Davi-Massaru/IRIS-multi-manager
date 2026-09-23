@@ -31,14 +31,14 @@ docker compose ps
 
 The first build downloads the IRIS, Java, and frontend dependencies and can take several minutes. Wait until the three IRIS containers report `healthy`. Then open [http://localhost:8080](http://localhost:8080).
 
-The demo username is **`_SYSTEM`** and the password is **`IrisDemo2026!`** for all three IRIS instances. The password is written directly in `docker-compose.yml` for this local demonstration. It is public and must not be reused for a real server.
+The demo username is **`_SYSTEM`** and the password is **`SYS`** for all three IRIS instances. The password is written directly in `docker-compose.yml` for this local demonstration. It is public and must not be reused for a real server.
 
 | Application | Local address | Login |
 | --- | --- | --- |
-| IRIS Multi-Manager | [http://localhost:8080](http://localhost:8080) | In **Instances**, connect with `_SYSTEM` / `IrisDemo2026!` |
-| PROD-01 Management Portal | [http://localhost:52773/csp/sys/UtilHome.csp](http://localhost:52773/csp/sys/UtilHome.csp) | `_SYSTEM` / `IrisDemo2026!` |
-| PROD-02 Management Portal | [http://localhost:52774/csp/sys/UtilHome.csp](http://localhost:52774/csp/sys/UtilHome.csp) | `_SYSTEM` / `IrisDemo2026!` |
-| PROD-03 Management Portal | [http://localhost:52775/csp/sys/UtilHome.csp](http://localhost:52775/csp/sys/UtilHome.csp) | `_SYSTEM` / `IrisDemo2026!` |
+| IRIS Multi-Manager | [http://localhost:8080](http://localhost:8080) | In **Instances**, connect with `_SYSTEM` / `SYS` |
+| PROD-01 Management Portal | [http://localhost:52773/csp/sys/UtilHome.csp](http://localhost:52773/csp/sys/UtilHome.csp) | `_SYSTEM` / `SYS` |
+| PROD-02 Management Portal | [http://localhost:52774/csp/sys/UtilHome.csp](http://localhost:52774/csp/sys/UtilHome.csp) | `_SYSTEM` / `SYS` |
+| PROD-03 Management Portal | [http://localhost:52775/csp/sys/UtilHome.csp](http://localhost:52775/csp/sys/UtilHome.csp) | `_SYSTEM` / `SYS` |
 
 The Multi-Manager has no separate account. Select the three instances on its **Instances** screen, enter the demo credentials, and click **Connect**. Connections are authenticated independently; on other servers, use each server's own credentials. The backend's local port `8081` serves the API, not another login page.
 

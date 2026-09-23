@@ -57,4 +57,4 @@ volumes:
   iris_prod3_data:
 configs:
   iris_password:
-    content: "IrisDemo2026!"
+    content: "SYS"
