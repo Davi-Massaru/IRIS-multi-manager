@@ -9,7 +9,7 @@ x-iris: &iris
   environment:
     ISC_DATA_DIRECTORY: /durable/iris
   healthcheck:
-    test: ["CMD", "iris", "qlist", "IRIS"]
+    test: ["CMD-SHELL", "iris qlist IRIS | grep -q '\\^running,'"]
     interval: 15s
     timeout: 5s
     retries: 20
@@ -27,6 +27,10 @@ services:
     networks: [iris-multi-manager-net]
   iris-prod1:
     <<: *iris
+    build:
+      context: ./docker/iris
+      args:
+        INSTALL_SENTENCE_TRANSFORMERS: "true"
     hostname: iris-prod1
     environment:
       ISC_DATA_DIRECTORY: /durable/iris
@@ -35,6 +39,10 @@ services:
     volumes: [iris_prod1_data:/durable]
   iris-prod2:
     <<: *iris
+    build:
+      context: ./docker/iris
+      args:
+        INSTALL_SENTENCE_TRANSFORMERS: "true"
     hostname: iris-prod2
     environment:
       ISC_DATA_DIRECTORY: /durable/iris

@@ -13,7 +13,7 @@ Assert-True ($rows.results[0].data.rows[0][-1] -eq '[vector hidden]') 'Vector wa
 $test=Post-Api '/vector/models/test' @{instanceId='prod1';text='IRIS vector smoke test'}
 Assert-True ($test.results[0].data.dimensions -eq 4) 'Embedded Python SqlProc did not return the demo vector'
 $check=Post-Api '/vector/models/check' @{instanceId='prod1';model='sentence-transformers/all-MiniLM-L6-v2'}
-Assert-True ($check.results[0].data.runtimeInstalled -eq $false) 'Model readiness does not reflect the demo runtime'
+Assert-True ($check.results[0].data.runtimeInstalled -eq $true) 'SentenceTransformers runtime missing from PROD-01'
 $download=Post-Api '/vector/models/download' @{instanceId='prod1';model='sentence-transformers/all-MiniLM-L6-v2'}
 Assert-True ($download.results[0].data.downloaded -eq $false) 'Offline demo unexpectedly downloaded a model'
 $prod3=$inventory.results|Where-Object instanceId -eq prod3

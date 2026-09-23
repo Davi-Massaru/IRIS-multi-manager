@@ -42,7 +42,14 @@ The demo username is **`_SYSTEM`** and the password is **`SYS`** for all three I
 
 The Multi-Manager has no separate account. Select the three instances on its **Instances** screen, enter the demo credentials, and click **Connect**. Connections are authenticated independently; on other servers, use each server's own credentials. The backend's local port `8081` serves the API, not another login page.
 
-The three demo IRIS servers have separate persistent volumes. Their local JDBC ports are `1972`, `1973`, and `1974`. If you used an earlier version with a generated password, recreate the containers with `docker compose up -d --build` to apply the fixed demo password. The persistent volumes are retained.
+The three demo IRIS servers have separate persistent volumes. Their local JDBC ports are `1972`, `1973`, and `1974`. The bundled demo credential is `_SYSTEM` / `SYS`. The image's standard password initializer reads the Compose password file before starting IRIS. To intentionally reset all demo data:
+
+```powershell
+docker compose down --remove-orphans --volumes
+docker compose up -d --build
+```
+
+This deletes the project's three demo database volumes and their data. It is not required for routine password troubleshooting. The healthcheck verifies that IRIS reports `running`, rather than merely that the instance is registered. PROD-01 and PROD-02 include `sentence-transformers`; its files must belong to `irisowner` so the first-start durable-directory initialization can complete. PROD-03 does not install this optional package.
 
 ## Try the application
 
