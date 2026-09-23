@@ -9,6 +9,7 @@ import static org.iris.multimanager.vector.VectorModels.*;
 @Path("/api/vector") @Produces(MediaType.APPLICATION_JSON) @Consumes(MediaType.APPLICATION_JSON)
 public class VectorResource {
     @Inject VectorService service;
+    @POST @Path("/libraries/check") public Object checkLibrary(@CookieParam("IRIS_SESSION") String session,Map<String,String> body){if(body==null)throw new BadRequestException();return service.checkLibrary(session,body.get("instances"),body.get("module"));}
     @GET @Path("/assets") public Object assets(@CookieParam("IRIS_SESSION") String session,@QueryParam("instances") String instances){return service.inventory(session,instances);}
     @GET @Path("/assets/{instance}/{asset}/rows") public Object rows(@CookieParam("IRIS_SESSION") String session,@PathParam("instance") String instance,@PathParam("asset") String asset,@QueryParam("includeVector") @DefaultValue("false") boolean includeVector){return service.rows(session,instance,asset,includeVector);}
     @GET @Path("/extension/status") public Object status(@CookieParam("IRIS_SESSION") String session,@QueryParam("instances") String instances){return service.extension(session,instances);}

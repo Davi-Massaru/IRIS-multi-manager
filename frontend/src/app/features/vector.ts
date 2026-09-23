@@ -7,6 +7,12 @@ import {FleetOperationResult} from '../shared/fleet-operation-result';
 @Component({selector:'vector-workspace',imports:[FormsModule,JsonPipe,FleetOperationResult],template:`
 <div class="toolbar"><button class="primary" (click)="load()" [disabled]="busy()||!selected.length">{{busy()?'Loading…':'Refresh vector inventory'}}</button></div>
 <fleet-operation-result [result]="inventory()"/>
+<section><h2>Python library availability</h2>
+<p class="muted">Check whether a module is discoverable in each selected IRIS instance. Use its Python import name (for example sentence_transformers). This does not load the library or verify its dependencies.</p>
+<form class="search" (ngSubmit)="checkLibrary()"><label>Python module<input name="libraryName" [(ngModel)]="libraryName" (ngModelChange)="libraryResult.set(null)" maxlength="128" pattern="[A-Za-z_][A-Za-z0-9_]*" required placeholder="sentence_transformers"></label><button [disabled]="libraryBusy()||!selected.length||!libraryName.trim()">{{libraryBusy()?'Checking…':'Check selected instances'}}</button></form>
+@if(libraryError()){<p class="error" role="alert">{{libraryError()}}</p>}
+@if(libraryResult();as result){<div class="table-wrap" aria-live="polite"><table><thead><tr><th>INSTANCE</th><th>MODULE</th><th>RESULT</th><th>DETAIL</th></tr></thead><tbody>@for(target of result.results;track target.instanceId){<tr><td>{{target.instanceName}}</td><td>{{target.data?.module||checkedLibrary}}</td><td>{{target.status==='SUCCESS'?(target.data?.available===true?'OK':target.data?.available===false?'NO':'ERROR'):target.status}}</td><td>{{target.data?.message||target.message}}</td></tr>}</tbody></table></div>}
+</section>
 @if(inventory()){
 <div class="dashboard-grid">
   <section><h2>Fleet vector assets</h2><p class="metric">{{assets().length}}</p><p class="muted">VECTOR and EMBEDDING columns discovered through the IRIS class dictionary.</p></section>
@@ -24,8 +30,10 @@ import {FleetOperationResult} from '../shared/fleet-operation-result';
 @if(error()){<p class="error">{{error()}}</p>}
 `})
 export class VectorWorkspace implements OnChanges {
+  libraryName='sentence_transformers';checkedLibrary='';libraryBusy=signal(false);libraryError=signal('');libraryResult=signal<FleetResult<{module:string;available:boolean|null;message:string}>|null>(null);private libraryRequest=0;
+  async checkLibrary(){const module=this.libraryName.trim();if(!/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(module)||!this.selected.length){this.libraryError.set('Enter a valid top-level module name and select an instance.');return;}const request=++this.libraryRequest;this.libraryBusy.set(true);this.libraryError.set('');this.libraryResult.set(null);this.checkedLibrary=module;try{const result=await api<FleetResult<{module:string;available:boolean|null;message:string}>>('/vector/libraries/check',{instances:this.selected.join(','),module});if(request===this.libraryRequest&&this.libraryName.trim()===module)this.libraryResult.set(result);}catch(e){if(request===this.libraryRequest)this.libraryError.set(e instanceof Error?e.message:'Library check failed');}finally{if(request===this.libraryRequest)this.libraryBusy.set(false);}}
   @Input() selected:string[]=[];busy=signal(false);error=signal('');inventory=signal<FleetResult<VectorInventory>|null>(null);rows=signal<VectorRows|null>(null);rowTitle=signal('');preview=signal<VectorPreview|null>(null);actionResult=signal<FleetResult|null>(null);modelResult=signal<unknown>(null);confirmation='';modelText='';modelInstance='';
-  ngOnChanges(){if(this.selected.length)void this.load();}
+  ngOnChanges(){this.libraryRequest++;this.libraryBusy.set(false);this.libraryResult.set(null);if(this.selected.length)void this.load();}
   async load(){this.busy.set(true);this.error.set('');try{const data=await api<FleetResult<VectorInventory>>('/vector/assets?instances='+this.selected.join(','));this.inventory.set(data);if(!this.modelInstance)this.modelInstance=data.results.find(r=>r.status==='SUCCESS')?.instanceId??'';}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   assets(){return (this.inventory()?.results??[]).flatMap(target=>(target.data?.assets??[]).map(asset=>({target,asset})));}
   models(){return (this.inventory()?.results??[]).flatMap(target=>(target.data?.models??[]).map(model=>({target,model})));}

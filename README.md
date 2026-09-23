@@ -55,6 +55,8 @@ The three demo IRIS servers have separate persistent volumes. Their local JDBC p
 
 ## Vector Management workspace
 
+In **Vector Search → Python library availability**, enter a top-level Python import name such as `sentence_transformers` or `json`, then click **Check selected instances**. Each selected server reports **OK** (module found), **NO** (not found), or its connection/error status. The check uses `importlib.util.find_spec` inside that IRIS instance's Embedded Python runtime; it does not import the library, validate its dependencies, or install packages. External IRIS servers need the updated `MultiManager.Vector.Extension` class installed in the connected namespace.
+
 The vector workspace follows the same partial-failure model as the rest of Multi-Manager. Every result remains attached to `(instance, namespace)`, so an offline target does not remove successful inventory from other servers.
 
 Discovery uses JDBC and the IRIS class dictionary because the SysAdmin API does not expose vector SQL metadata. `%Dictionary.CompiledProperty` identifies `%Library.Vector` and `%Library.Embedding`; `%Dictionary.CompiledIndex` provides HNSW parameters. `%Embedding.Config` is read separately, and secret-like keys such as `apiKey`, `token`, `password`, and `secret` are recursively replaced with `[REDACTED]` before the response is sent to Angular.

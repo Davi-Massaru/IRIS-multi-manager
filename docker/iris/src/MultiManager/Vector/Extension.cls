@@ -1,6 +1,24 @@
 Class MultiManager.Vector.Extension
 {
 
+/// Checks discovery in this instance's Embedded Python runtime.
+ClassMethod CheckLibrary(moduleName As %String) As %String [ Language = python, SqlName = MM_VectorCheckLibrary, SqlProc ]
+{
+    import importlib.util
+    import json
+    import re
+
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,127}", moduleName or ""):
+        raise ValueError("Use a top-level Python module name, such as sentence_transformers")
+    try:
+        available = importlib.util.find_spec(moduleName) is not None
+        return json.dumps({"module": moduleName, "available": available,
+                           "message": "Module found" if available else "Module not found"})
+    except Exception:
+        return json.dumps({"module": moduleName, "available": None,
+                           "message": "Module discovery failed"})
+}
+
 /// Reports the real Embedded Python and SentenceTransformers state without
 /// importing or downloading a model as a side effect.
 ClassMethod Capabilities() As %String [ Language = python, SqlName = MM_VectorCapabilities, SqlProc ]

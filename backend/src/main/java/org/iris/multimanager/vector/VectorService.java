@@ -23,6 +23,18 @@ public class VectorService {
     @Inject InstanceRegistry registry; @Inject SessionStore sessions; @Inject FleetExecutor fleet; @Inject ObjectMapper mapper; @Inject SysAdminClientFactory clients;
     private final ConfirmedPlanStore<Plan> plans=new ConfirmedPlanStore<>();
 
+    public FleetResult<JsonNode> checkLibrary(String session,String ids,String module) {
+        if(module==null||!module.matches("[A-Za-z_][A-Za-z0-9_]{0,127}"))throw new BadRequestException("Use a top-level Python module name");
+        if(ids==null||ids.isBlank())throw new BadRequestException("Select at least one instance");
+        var targets=registry.select(ids);targets.forEach(i->sessions.require(session,i.id()));
+        return fleet.execute(targets,i->{
+            try(var c=connection(i,sessions.require(session,i.id()));var p=c.prepareStatement("SELECT MultiManager_Vector.MM_VectorCheckLibrary(?)")) {
+                p.setString(1,module);
+                try(var r=p.executeQuery()){r.next();return mapper.readTree(r.getString(1));}
+            }
+        });
+    }
+
     public FleetResult<Inventory> inventory(String session,String ids) {
         var targets=registry.select(ids);targets.forEach(i->sessions.require(session,i.id()));
         return fleet.execute(targets,i->readInventory(i,sessions.require(session,i.id())));
