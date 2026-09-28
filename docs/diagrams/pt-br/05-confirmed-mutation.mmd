@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Validar
+    Validar --> Previa: requisição válida
+    Previa --> Expirado: após 2 minutos
+    Previa --> Consumir: confirmado uma vez
+    Consumir --> Obsoleto: estado atual mudou
+    Consumir --> Aplicar: estado ainda corresponde à prévia
+    Aplicar --> Verificar
+    Verificar --> Sucesso: campos esperados conferem
+    Verificar --> FalhaDeVerificacao: valores diferentes

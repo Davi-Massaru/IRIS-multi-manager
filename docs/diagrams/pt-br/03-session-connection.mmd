@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant B as Navegador
+    participant R as InstanceResource
+    participant S as SessionStore
+    participant C as SysAdminClient
+    participant I as IRIS SysAdmin API
+
+    B->>R: POST /api/instances/{id}/connect
+    R->>C: cria com as credenciais enviadas
+    C->>I: GET /api/admin/info
+    I-->>C: apiVersion e dados da instância
+    C-->>R: resposta autenticada
+    R->>S: guarda credenciais por sessão + instância
+    R-->>B: cookie HttpOnly SameSite=Strict

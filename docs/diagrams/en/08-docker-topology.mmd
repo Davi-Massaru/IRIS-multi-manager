@@ -1,0 +1,8 @@
+flowchart TB
+    F[frontend<br/>Nginx + Angular] --> B[backend<br/>Quarkus]
+    B --> P1[iris-prod1]
+    B --> P2[iris-prod2]
+    B --> P3[iris-prod3]
+    P1 --> V1[(iris_prod1_data)]
+    P2 --> V2[(iris_prod2_data)]
+    P3 --> V3[(iris_prod3_data)]

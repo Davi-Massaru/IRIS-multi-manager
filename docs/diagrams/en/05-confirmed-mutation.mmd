@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Validate
+    Validate --> Preview: valid request
+    Preview --> Expired: after 2 minutes
+    Preview --> Consume: confirmed once
+    Consume --> Stale: current state changed
+    Consume --> Apply: state still matches preview
+    Apply --> Verify
+    Verify --> Success: expected fields match
+    Verify --> VerificationFailed: values differ

@@ -33,28 +33,13 @@ O workspace contém onze áreas:
 
 As operações enviadas ao `FleetExecutor` retornam um resultado por destino selecionado. A validação da requisição e das credenciais pode rejeitar uma chamada antes dessa etapa. Após o início da execução, uma falha de destino preserva os resultados bem-sucedidos. As alterações são efetivadas de forma independente em cada instância; uma alteração aplicada permanece quando outro destino falha.
 
-![Workspace Instances com três servidores demo conectados](docs/screenshots/instances.png)
+![Workspace Instances com três servidores demo conectados](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/screenshots/instances.png)
 
 ## Arquitetura
 
 O sistema possui uma camada de navegador, uma camada de orquestração e destinos IRIS independentes.
 
-```mermaid
-flowchart LR
-    U[Administrador] --> UI[Angular 21 UI]
-    UI -->|same-origin /api| N[Nginx]
-    N --> Q[Quarkus 3 / Java 21]
-
-    Q -->|Basic Auth + JSON| A1[IRIS SysAdmin API<br/>Instância 1]
-    Q -->|Basic Auth + JSON| A2[IRIS SysAdmin API<br/>Instância 2]
-    Q -->|Basic Auth + JSON| AN[IRIS SysAdmin API<br/>Instância N]
-
-    Q -->|InterSystems JDBC| J1[IRIS SQL<br/>Instância 1]
-    Q -->|InterSystems JDBC| J2[IRIS SQL<br/>Instância 2]
-    Q -->|InterSystems JDBC| JN[IRIS SQL<br/>Instância N]
-
-    J1 --> EP[ObjectScript SqlProc<br/>Embedded Python]
-```
+![Arquitetura e caminhos de integração com IRIS](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/diagrams/pt-br/01-architecture.png)
 
 O frontend não chama os servidores IRIS gerenciados diretamente. O Nginx entrega o Angular e encaminha `/api/` para o Quarkus. O backend centraliza o registro de instâncias, as credenciais, os destinos de saída, os timeouts, os limites de resposta e as regras de mutação.
 
@@ -144,30 +129,7 @@ Esse modelo preserva a identidade necessária nas operações multi-instância. 
 
 `FleetExecutor` é o componente compartilhado de orquestração. Ele controla um `ThreadPoolExecutor` de tamanho fixo, uma fila limitada, um deadline para a frota e status de erro normalizados.
 
-```mermaid
-sequenceDiagram
-    participant UI as Angular
-    participant API as Recurso Quarkus
-    participant F as FleetExecutor
-    participant I1 as IRIS 1
-    participant I2 as IRIS 2
-    participant I3 as IRIS 3
-
-    UI->>API: request(targets=[1,2,3])
-    API->>F: execute(targets, operation)
-    par IRIS 1
-        F->>I1: operação
-        I1-->>F: sucesso + dados
-    and IRIS 2
-        F->>I2: operação
-        I2-->>F: timeout
-    and IRIS 3
-        F->>I3: operação
-        I3-->>F: sucesso + dados
-    end
-    F-->>API: FleetResult(2 sucessos, 1 timeout)
-    API-->>UI: resultados dos três destinos
-```
+![Execução paralela da frota com resultados por instância](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/diagrams/pt-br/02-fleet-execution.png)
 
 A configuração padrão usa seis workers, fila de 64 tarefas e timeout de frota de 15 segundos. Falhas de rede, autorização, operação não suportada, timeout e saturação tornam-se status por destino, como `OFFLINE`, `UNAUTHORIZED`, `FORBIDDEN`, `UNSUPPORTED`, `TIMEOUT` e `BUSY`.
 
@@ -198,22 +160,7 @@ pool = new ThreadPoolExecutor(
 
 O fluxo de conexão é:
 
-```mermaid
-sequenceDiagram
-    participant B as Navegador
-    participant R as InstanceResource
-    participant S as SessionStore
-    participant C as SysAdminClient
-    participant I as IRIS SysAdmin API
-
-    B->>R: POST /api/instances/{id}/connect
-    R->>C: cria com as credenciais enviadas
-    C->>I: GET /api/admin/info
-    I-->>C: apiVersion e dados da instância
-    C-->>R: resposta autenticada
-    R->>S: guarda credenciais por sessão + instância
-    R-->>B: cookie HttpOnly SameSite=Strict
-```
+![Autenticação da instância e credenciais de sessão](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/diagrams/pt-br/03-session-connection.png)
 
 As credenciais permanecem no `SessionStore` em memória, com escopo por ID da sessão e ID da instância. Cada consulta a uma sessão válida renova sua expiração no servidor por 30 minutos. O cookie do navegador possui um `Max-Age` separado de 1.800 segundos, definido na conexão. O store aceita até 256 sessões. `CredentialContext.toString()` omite a senha de sua representação textual.
 
@@ -237,19 +184,9 @@ O catálogo cobre web applications, tarefas, usuários, papéis, recursos, cole�
 
 O construtor da matriz calcula a união das chaves retornadas pelos destinos bem-sucedidos e cria uma célula por instância. Para cada recurso, a primeira configuração disponível vira a referência de comparação. As configurações seguintes recebem `DIFFERENT` quando divergem e `PRESENT` quando coincidem. Uma resposta bem-sucedida sem o recurso recebe `MISSING`. Destinos com falha preservam seu status operacional, como `OFFLINE`.
 
-```mermaid
-flowchart TD
-    L1[Lista de recursos do IRIS 1] --> U[União das chaves]
-    L2[Lista de recursos do IRIS 2] --> U
-    L3[Lista de recursos do IRIS 3] --> U
-    U --> C{Para cada chave e destino}
-    C -->|destino falhou| F[Manter OFFLINE / FORBIDDEN / TIMEOUT]
-    C -->|sem linha correspondente| M[MISSING]
-    C -->|configuração igual| P[PRESENT]
-    C -->|configuração diferente| D[DIFFERENT]
-```
+![Construção da matriz de comparação de recursos](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/diagrams/pt-br/04-resource-comparison.png)
 
-![Matriz de comparação de Web Apps na frota demo](docs/screenshots/web-apps.png)
+![Matriz de comparação de Web Apps na frota demo](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/screenshots/web-apps.png)
 
 ## Mutação segura com preflight e confirmação
 
@@ -264,18 +201,7 @@ Alterações em web applications e tarefas usam um fluxo em duas etapas. Para um
 7. grava somente os campos aprovados;
 8. lê o recurso outra vez e verifica o resultado.
 
-```mermaid
-stateDiagram-v2
-    [*] --> Validar
-    Validar --> Previa: requisição válida
-    Previa --> Expirado: após 2 minutos
-    Previa --> Consumir: confirmado uma vez
-    Consumir --> Obsoleto: estado atual mudou
-    Consumir --> Aplicar: estado ainda corresponde à prévia
-    Aplicar --> Verificar
-    Verificar --> Sucesso: campos esperados conferem
-    Verificar --> FalhaDeVerificacao: valores diferentes
-```
+![Prévia, confirmação e verificação de alterações](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/diagrams/pt-br/05-confirmed-mutation.png)
 
 Cada `ConfirmedPlanStore` aceita até 128 planos pendentes, associa os planos à sessão de origem, remove entradas expiradas ao adicionar planos e consome cada token uma única vez. Web applications, tarefas e operações vetoriais possuem stores separados. As alterações em web applications aceitam `Description` com até 256 caracteres, `Enabled` Boolean e `Timeout` inteiro de 60 a 86.400.
 
@@ -283,7 +209,7 @@ A verificação depende da operação. Web applications comparam a prévia com a
 
 O controle de processos acrescenta uma verificação de identidade. O frontend lê `StartTimeUTC`, e o backend relê o processo imediatamente antes de suspender, retomar ou terminar. Se o horário mudar, a operação retorna `STALE_PROCESS`, protegendo contra reutilização de PID.
 
-![Workspace Processes com resultados qualificados por instância](docs/screenshots/processes.png)
+![Workspace Processes com resultados qualificados por instância](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/screenshots/processes.png)
 
 ## Modelagem de monitoramento
 
@@ -307,7 +233,7 @@ Enquanto Overview está aberto, o Angular atualiza os dados a cada 15 segundos. 
 | System | `/v2/monitor/system-usage` | Contadores de globals, rotinas, blocos, WIJ e journal |
 | Memória compartilhada | `/v2/monitor/system-usage/shared-memory` | `SMHAllocated`, `SMHUsed`, `SMHAvailable`, `AllUsed` |
 
-![Workspace Overview com cartões de saúde, métricas e tendências](docs/screenshots/overview.png)
+![Workspace Overview com cartões de saúde, métricas e tendências](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/screenshots/overview.png)
 
 ## Fleet Query: SQL somente leitura em várias instâncias
 
@@ -395,30 +321,9 @@ try (Connection connection = DriverManager.getConnection(url, props);
 
 [FleetQueryService.java](backend/src/main/java/org/iris/multimanager/query/FleetQueryService.java) converte os valores JDBC em nós Jackson: nulo, inteiro, decimal, Boolean ou texto. Seu `QueryResult` preserva os campos de status da frota e expõe `columns` e `rows` diretamente em cada destino. O Angular atualiza o signal de resultado e renderiza uma tabela por instância.
 
-```mermaid
-sequenceDiagram
-    participant A as Angular / fetch
-    participant N as Nginx
-    participant Q as QueryResource
-    participant S as FleetQueryService
-    participant F as FleetExecutor
-    participant I as IRIS / JDBC
-    A->>N: POST /api/query + cookie de sessão
-    N->>Q: Requisição JSON
-    Q->>S: execute(session, request)
-    S->>S: Valida SQL, destinos, limites e credenciais
-    S->>F: Uma operação por destino
-    loop Cada instância selecionada, dentro do limite de workers
-        F->>I: Abre conexão e executa SELECT
-        I-->>F: Metadados e linhas, ou erro
-    end
-    F-->>S: Resultados por destino
-    S-->>Q: QueryResult
-    Q-->>N: Resposta JSON
-    N-->>A: Renderiza tabelas por instância
-```
+![Requisição Fleet Query do Angular ao SQL do IRIS](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/diagrams/pt-br/06-fleet-query.png)
 
-![Fleet Query com resultados separados para três servidores](docs/screenshots/fleet-query.png)
+![Fleet Query com resultados separados para três servidores](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/screenshots/fleet-query.png)
 
 ## Gerenciamento vetorial no ecossistema IRIS
 
@@ -512,29 +417,9 @@ As operações de criação, reconstrução e remoção resolvem um ativo descob
 
 A regeneração suporta a receita de `VECTOR` direto com quatro dimensões. A interface seleciona a linha 1; o backend aceita um ID positivo, lê seu `Content`, chama `MM_VectorRegenerate(?)` e grava o JSON retornado por meio de `TO_VECTOR(?,DOUBLE)`, com o ID da linha parametrizado. [VectorService.java](backend/src/main/java/org/iris/multimanager/vector/VectorService.java) implementa esse fluxo.
 
-```mermaid
-sequenceDiagram
-    participant A as Angular
-    participant V as VectorService
-    participant D as IRIS SQL
-    participant P as Embedded Python SqlProc
-    A->>V: Prévia do ativo + ID da linha
-    V->>D: Resolve ativo no dicionário de classes
-    V-->>A: Token do plano + frase de confirmação
-    A->>V: Aplica token + confirmação
-    V->>V: Consome plano armazenado
-    V->>D: SELECT Content WHERE ID = ?
-    D-->>V: Texto de origem
-    V->>D: SELECT MM_VectorRegenerate(?)
-    D->>P: Executa Python com o texto de origem
-    P-->>D: Vetor de quatro dimensões em JSON
-    D-->>V: String JSON
-    V->>D: UPDATE vector = TO_VECTOR(?,DOUBLE) WHERE ID = ?
-    D-->>V: Quantidade de linhas afetadas
-    V-->>A: Resultado da ação por instância
-```
+![Regeneração vetorial com Embedded Python](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/diagrams/pt-br/07-vector-regeneration.png)
 
-![Inventário do Vector Search com metadados de embedding e HNSW](docs/screenshots/vector-search.png)
+![Inventário do Vector Search com metadados de embedding e HNSW](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/screenshots/vector-search.png)
 
 ## Implementação Angular
 
@@ -571,16 +456,7 @@ A interface preserva as fronteiras entre destinos. Fleet Query renderiza uma se�
 
 O Docker Compose inicia cinco serviços:
 
-```mermaid
-flowchart TB
-    F[frontend<br/>Nginx + Angular] --> B[backend<br/>Quarkus]
-    B --> P1[iris-prod1]
-    B --> P2[iris-prod2]
-    B --> P3[iris-prod3]
-    P1 --> V1[(iris_prod1_data)]
-    P2 --> V2[(iris_prod2_data)]
-    P3 --> V3[(iris_prod3_data)]
-```
+![Serviços Docker Compose e volumes persistentes](https://raw.githubusercontent.com/Davi-Massaru/IRIS-multi-manager/refs/heads/master/docs/diagrams/pt-br/08-docker-topology.png)
 
 Cada instância IRIS possui um volume durável. A imagem customizada carrega classes ObjectScript e uma rotina worker durante o build. Na inicialização, `start-demo.sh` recompila o código e executa `MultiManager.Demo.Seed`.
 

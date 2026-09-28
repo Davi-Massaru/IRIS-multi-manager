@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant UI as Angular
+    participant API as Recurso Quarkus
+    participant F as FleetExecutor
+    participant I1 as IRIS 1
+    participant I2 as IRIS 2
+    participant I3 as IRIS 3
+
+    UI->>API: request(targets=[1,2,3])
+    API->>F: execute(targets, operation)
+    par IRIS 1
+        F->>I1: operação
+        I1-->>F: sucesso + dados
+    and IRIS 2
+        F->>I2: operação
+        I2-->>F: timeout
+    and IRIS 3
+        F->>I3: operação
+        I3-->>F: sucesso + dados
+    end
+    F-->>API: FleetResult(2 sucessos, 1 timeout)
+    API-->>UI: resultados dos três destinos

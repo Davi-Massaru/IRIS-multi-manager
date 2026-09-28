@@ -1,0 +1,14 @@
+flowchart LR
+    U[Administrator] --> UI[Angular 21 UI]
+    UI -->|same-origin /api| N[Nginx]
+    N --> Q[Quarkus 3 / Java 21]
+
+    Q -->|Basic Auth + JSON| A1[IRIS SysAdmin API<br/>Instance 1]
+    Q -->|Basic Auth + JSON| A2[IRIS SysAdmin API<br/>Instance 2]
+    Q -->|Basic Auth + JSON| AN[IRIS SysAdmin API<br/>Instance N]
+
+    Q -->|InterSystems JDBC| J1[IRIS SQL<br/>Instance 1]
+    Q -->|InterSystems JDBC| J2[IRIS SQL<br/>Instance 2]
+    Q -->|InterSystems JDBC| JN[IRIS SQL<br/>Instance N]
+
+    J1 --> EP[ObjectScript SqlProc<br/>Embedded Python]

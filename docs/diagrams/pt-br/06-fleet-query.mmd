@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant A as Angular / fetch
+    participant N as Nginx
+    participant Q as QueryResource
+    participant S as FleetQueryService
+    participant F as FleetExecutor
+    participant I as IRIS / JDBC
+    A->>N: POST /api/query + cookie de sessão
+    N->>Q: Requisição JSON
+    Q->>S: execute(session, request)
+    S->>S: Valida SQL, destinos, limites e credenciais
+    S->>F: Uma operação por destino
+    loop Cada instância selecionada, dentro do limite de workers
+        F->>I: Abre conexão e executa SELECT
+        I-->>F: Metadados e linhas, ou erro
+    end
+    F-->>S: Resultados por destino
+    S-->>Q: QueryResult
+    Q-->>N: Resposta JSON
+    N-->>A: Renderiza tabelas por instância

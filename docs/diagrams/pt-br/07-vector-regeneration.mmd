@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant A as Angular
+    participant V as VectorService
+    participant D as IRIS SQL
+    participant P as Embedded Python SqlProc
+    A->>V: Prévia do ativo + ID da linha
+    V->>D: Resolve ativo no dicionário de classes
+    V-->>A: Token do plano + frase de confirmação
+    A->>V: Aplica token + confirmação
+    V->>V: Consome plano armazenado
+    V->>D: SELECT Content WHERE ID = ?
+    D-->>V: Texto de origem
+    V->>D: SELECT MM_VectorRegenerate(?)
+    D->>P: Executa Python com o texto de origem
+    P-->>D: Vetor de quatro dimensões em JSON
+    D-->>V: String JSON
+    V->>D: UPDATE vector = TO_VECTOR(?,DOUBLE) WHERE ID = ?
+    D-->>V: Quantidade de linhas afetadas
+    V-->>A: Resultado da ação por instância

@@ -1,0 +1,9 @@
+flowchart TD
+    L1[Lista de recursos do IRIS 1] --> U[União das chaves]
+    L2[Lista de recursos do IRIS 2] --> U
+    L3[Lista de recursos do IRIS 3] --> U
+    U --> C{Para cada chave e destino}
+    C -->|destino falhou| F[Manter OFFLINE / FORBIDDEN / TIMEOUT]
+    C -->|sem linha correspondente| M[MISSING]
+    C -->|configuração igual| P[PRESENT]
+    C -->|configuração diferente| D[DIFFERENT]

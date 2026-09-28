@@ -1,0 +1,9 @@
+flowchart TD
+    L1[IRIS 1 resource list] --> U[Union of resource keys]
+    L2[IRIS 2 resource list] --> U
+    L3[IRIS 3 resource list] --> U
+    U --> C{For each key and target}
+    C -->|target failed| F[Keep OFFLINE / FORBIDDEN / TIMEOUT]
+    C -->|no matching row| M[MISSING]
+    C -->|same configuration| P[PRESENT]
+    C -->|configuration differs| D[DIFFERENT]
